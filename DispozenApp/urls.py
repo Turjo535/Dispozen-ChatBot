@@ -3,7 +3,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import DispozenUserRegistrationView,OTPVerificationView,SendOTPView,DispozenUserLoginView,DispozenUserChangePasswordView,DispozenUserForgotPasswordResetView,DispozenAdminAccountSettingProfileView,DispozenUserDisableAccountView,DispozenAdminUpdateProfileView
 from .views import SuperAdminCreateAccountView,admininfo,DispozenAdminListView, DispozenOrganizerListView,DispozenPartnerListView,Delete_User,DispozenUsersOverView,RequestEventView
-from .views import ConfirmEventListView,InitialConfirmViewList,PartnerListView,EventDeleteView,OrganizerPartnerDealListView,OrganizerPartnerDealView,AllEventList,PartnerAcceptRequestListView,PartnerSuccessfulEventView,PaymentListView,  EventSchedulesConfirm,OrganizerPartnerUpdateProfileView,OrganizerConfirmPartner
+from .views import ConfirmEventListView,InitialConfirmViewList,PartnerListView,EventDeleteView,OrganizerPartnerDealListView,OrganizerPartnerDealView,AllEventList,PartnerAcceptRequestListView,PartnerSuccessfulEventView,PaymentListView,  EventSchedulesConfirm,OrganizerPartnerUpdateProfileView,OrganizerConfirmPartner,SendEventEmailsView
 from .views import PartnerDashboardSuccessfullEventView,PartnerRequestListView,PartnerRequestConfirmationView,PartnerConfirmEventListView,EventListShowtoPartnerView,EventRequestAcceptByPartnerView
 from .views import CheckUserView,CreateEventView,DateTimeModificationView,EventInvitationView,GuestVotingView
 urlpatterns = [
@@ -53,7 +53,7 @@ urlpatterns = [
     
     path('payment-list/', PaymentListView.as_view(), name='payment-list'),
     path('organizer-partner-update-profile/', OrganizerPartnerUpdateProfileView.as_view(), name='organizer-partner-update-profile'),
-    
+    path('send_emails/<int:event_id>/', SendEventEmailsView.as_view(), name='send_event_emails'),
     # path('organizer-send-request/', OrganizerSendRequestToPartnerView.as_view(), name='organizer-send-request'),
     path('organizer-partner-deal-list/', OrganizerPartnerDealListView.as_view(), name='organizer-partner-deal-list'),
     path('organizer-partner-deal/<int:id>/', OrganizerPartnerDealView.as_view(), name='organizer-partner-deal'),

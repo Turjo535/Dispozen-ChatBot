@@ -23,7 +23,7 @@ from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 import secrets, string
 from django.conf import settings
-
+from .email import send_event_email
 
 def get_tokens_for_user(user):
     if not user.is_active:
@@ -659,6 +659,29 @@ class OrganizerPartnerDealView(APIView):
         serializer = PartnerSuccessfulEventSerializer(record)
         return Response({"message": "Partner and organizer deal done successfully.", "data": serializer.data}, status=status.HTTP_201_CREATED)
 
+class SendEventEmailsView(APIView):
+    permission_classes = [IsOrganizerUser]
+    def post(self, request, event_id):
+        
+        event = get_object_or_404(EventModel, pk=event_id)
+
+    
+        subject = f"Reminder for Event: {event.name}" 
+        message = f"Dear Guest, don't forget about our upcoming event: {event.name}. See you there!"
+
+    
+        success = send_event_email(event_id, subject, message)
+
+        if success:
+            return Response(
+                {"message": f"Emails sent to all guests for event: {event.name}"},
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"message": "No guests found for this event."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 
 # Partner Dashboard Website

@@ -22,12 +22,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-96f&@ucxv8do0+2itsfag-)7o-+hr04+j9^s&_(zfeudkan*y%'
+SECRET_KEY = config('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ['dispozen.dsrt321.online', 'www.dispozen.dsrt321.online', 'localhost', '127.0.0.1']
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://dispozen.dsrt321.online',
+    'http://dispozen.dsrt321.online',  # if using HTTP for testing (not recommended for production)
+    'wss://dispozen.dsrt321.online',  # For secure WebSocket connections (use 'ws' for non-secure connections)
+    'ws://dispozen.dsrt321.online',   # For non-secure WebSocket connections (use 'wss' for secure connections)
+]
+
 
 # CORS_ALLOWED_ORIGINS = [
             
@@ -149,10 +157,10 @@ AUTH_USER_MODEL = 'DispozenApp.DispozenUser'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "dispozen_eventmanagement",
-        "USER": "postgres",
-        "PASSWORD": "turjo35",
-        "HOST": "db",
+        "NAME": config("DB_NAME"),
+        "USER": config("DB_USER"),
+        "PASSWORD": config("DB_PASSWORD"),
+        "HOST": "127.0.0.1",
         "PORT": "5432",
     }
 }
@@ -242,5 +250,5 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'turjokhan535@gmail.com'
+EMAIL_HOST_USER = config('Email_Id')
 EMAIL_HOST_PASSWORD = config('Email_Password')
