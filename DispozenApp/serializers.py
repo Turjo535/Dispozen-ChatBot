@@ -125,8 +125,8 @@ class PartnerSuccessfulEventSerializer(serializers.ModelSerializer):
             'event_name': event.event_name,
             'event_description': event.event_description,
             'location': event.location,
-            'schedule_date': event.schedule_date,
-            'schedule_date_time': event.schedule_date_time,
+            'confirm_schedule': event.confirm_schedule,
+            # 'schedule_date_time': event.schedule_date_time,
             'going': event.going,
             'not_going': event.not_going,
             'maybe': event.maybe,
@@ -245,8 +245,8 @@ class EventDetailsOrganizerSendRequestSerializer(serializers.ModelSerializer):
             'event_name',
             'event_description',
             'going',
-            'schedule_date',
-            'schedule_date_time',
+            'confirm_schedule',
+            # 'schedule_date_time',
             'totalevents',
             
         ]

@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Django web application
+  web:
+    build: .
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-96f&@ucxv8do0+2itsfag-)7o-+hr04+j9^s&_(zfeudkan*y%
+      - ALLOWED_HOSTS=*
+      - DATABASE_URL=postgres://postgres:turjo35@db:5432/dispozen_eventmanagement
+    depends_on:
+      - db
+    networks:
+      - dispozen_network
+
+  # PostgreSQL database service
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=dispozen_eventmanagement
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=turjo35
+    networks:
+      - dispozen_network
+
+  # Redis (for Channels and WebSockets)
+  redis:
+    image: redis:latest
+    networks:
+      - dispozen_network
+
+volumes:
+  postgres_data:
+
+networks:
+  dispozen_network:
+    driver: bridge

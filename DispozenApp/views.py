@@ -659,6 +659,8 @@ class OrganizerPartnerDealView(APIView):
         serializer = PartnerSuccessfulEventSerializer(record)
         return Response({"message": "Partner and organizer deal done successfully.", "data": serializer.data}, status=status.HTTP_201_CREATED)
 
+
+
 # Partner Dashboard Website
 class PartnerDashboardSuccessfullEventView(APIView):
     permission_classes = [IsPartnerUser]
@@ -868,17 +870,17 @@ class GuestVotingView(APIView):
         schedule=request.data.get("schedule")
         event_id=int(event_id)^1011
         event=get_object_or_404(EventModel, id=event_id)
-        if schedule==int(1):
-            if vote==int(1):
+        if int(schedule)==1:
+            if int(vote)==int(1):
                 event.schedule1_going+=1
-            elif vote==int(2):
+            elif int(vote)==int(2):
                 event.schedule1_not_going+=1
             else:
                 event.schedule1_maybe+=1
         else:
-            if vote==1:
+            if int(vote)==1:
                 event.schedule2_going+=1
-            elif vote==2:
+            elif int(vote)==2:
                 event.schedule2_not_going+=1
             else:
                 event.schedule2_maybe+=1
@@ -918,7 +920,7 @@ class DateTimeModificationView(APIView):
         
         # Compare times (both now aware)
         if day_time <= current_time:
-            return Response({"date_time": None, "phase": day_phase}, status=400)
+            return Response({"date_time": None, }, status=400)
 
         date = day_time.strftime('%d/%m/%Y')  # Format the date as day/month/year
         date_obj = datetime.strptime(date, '%d/%m/%Y')
