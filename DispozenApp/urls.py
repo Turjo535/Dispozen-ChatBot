@@ -5,7 +5,7 @@ from .views import DispozenUserRegistrationView,OTPVerificationView,SendOTPView,
 from .views import SuperAdminCreateAccountView,admininfo,DispozenAdminListView, DispozenOrganizerListView,DispozenPartnerListView,Delete_User,DispozenUsersOverView,RequestEventView
 from .views import ConfirmEventListView,InitialConfirmViewList,PartnerListView,EventDeleteView,OrganizerPartnerDealListView,OrganizerPartnerDealView,AllEventList,PartnerAcceptRequestListView,PartnerSuccessfulEventView,PaymentListView,  EventSchedulesConfirm,OrganizerPartnerUpdateProfileView,OrganizerConfirmPartner
 from .views import PartnerDashboardSuccessfullEventView,PartnerRequestListView,PartnerRequestConfirmationView,PartnerConfirmEventListView,EventListShowtoPartnerView,EventRequestAcceptByPartnerView
-from .views import CheckUserView,CreateEventView,DateTimeModificationView
+from .views import CheckUserView,CreateEventView,DateTimeModificationView,EventInvitationView,GuestVotingView
 urlpatterns = [
     # Token Refresh Endpoint
     path('refresh-token/', TokenRefreshView.as_view(), name='token-refresh'),
@@ -67,7 +67,8 @@ urlpatterns = [
     # ManyChat Endpoints
     path('check-user/<str:id>/', CheckUserView.as_view(), name='check-user'),
     path('create-event/', CreateEventView.as_view(), name='create_event'),
-    # path('event-invitation/', EventInvitationView.as_view(), name='event-invitation'),
+    path('event-invitation/<int:id>/', EventInvitationView.as_view(), name='event-invitation'),
+    path('voting/',GuestVotingView.as_view(),name="Guest_voting"),
     path("datetime-modify/",DateTimeModificationView.as_view(),name="datetime-modify"),
 
 ]
