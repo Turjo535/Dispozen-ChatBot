@@ -41,7 +41,7 @@ class DispozenUser(AbstractUser):
     )
 
     def __str__(self):
-        return self.username
+        return self.email
 
 class EventModel(models.Model):
     organizer_id=models.ForeignKey(DispozenUser,on_delete=models.CASCADE)
@@ -117,3 +117,8 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification for {self.partner.name} from {self.organizer.name}"
+    
+
+class GuestEmail(models.Model):
+    eventId=models.ForeignKey(EventModel, on_delete=models.CASCADE)
+    email=models.EmailField()

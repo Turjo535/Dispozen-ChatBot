@@ -7,9 +7,9 @@ from django.db import models
 from datetime import datetime
 from datetime import timedelta
 import pytz  
-from .serializers import DispozenUserRegistrationSerializer,DispozenUserSerializer, DateTimeModificationSerializer, CreateEventModelSerializer,EventInvitationSerializer,DispozenAdminCreateSerializer,PartnerListSerializer,PaymentModelSerializer,OrganizerPartnerProfileUpdateSerializer,RequestEventSerializer,UpdateAdminProfileSerializer
-from .serializers import PartnerSuccessfulEventSerializer,OrganizerSendRequestToPartnerSerializer,DispozenPartnerSerializer,DispozenUpdateProfileInformationSerializer,ConfirmEventSerializer,InitialConfirmEventSerializer,AllEventSerializer,OrganizerSelectPartnerSerializer,OrganizerEventShowtoPartnerSerializer
-from .models import DispozenUser, EventModel,PartnerSuccessfulEvent,OrganizerSendRequestToPartner,PaymentModel,Notification
+from .serializers import DispozenUserRegistrationSerializer,DispozenUserSerializer, DateTimeModificationSerializer, CreateEventModelSerializer,DispozenAdminCreateSerializer,PartnerListSerializer,PaymentModelSerializer,OrganizerPartnerProfileUpdateSerializer,RequestEventSerializer,UpdateAdminProfileSerializer
+from .serializers import PartnerSuccessfulEventSerializer,OrganizerSendRequestToPartnerSerializer,DispozenPartnerSerializer,DispozenUpdateProfileInformationSerializer,ConfirmEventSerializer,InitialConfirmEventSerializer,AllEventSerializer,OrganizerSelectPartnerSerializer,OrganizerEventShowtoPartnerSerializer,GuestVotingSerializer
+from .models import DispozenUser, EventModel,PartnerSuccessfulEvent,OrganizerSendRequestToPartner,PaymentModel,Notification,GuestEmail
 from .countrytime import convert_utc_to_local
 from datetime import time
 from rest_framework import status, permissions
@@ -23,6 +23,7 @@ from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 import secrets, string
 from django.conf import settings
+
 
 def get_tokens_for_user(user):
     if not user.is_active:
@@ -839,9 +840,10 @@ class CreateEventView(APIView):
         if serializer.is_valid():
             event = serializer.save()
             
-            # Return success response with created event data
+            event_id=event.id^1011
+            print(event_id^1011)
             response_data = {
-                "Event id":event.id,
+                "Event id":event_id,
                 'message': 'Event created successfully'
             }
             
@@ -850,6 +852,45 @@ class CreateEventView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class EventInvitationView(APIView):
+    def get(self, request, id):
+        id=id^1011
+        event=get_object_or_404(EventModel, id=id)
+        serializer = CreateEventModelSerializer(event)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class GuestVotingView(APIView):
+    def post(self, request):
+        serializer=GuestVotingSerializer(data=request.data)
+        event_id=request.data.get("event_id")
+        email=request.data.get("email")
+        vote=request.data.get("vote")
+        schedule=request.data.get("schedule")
+        event_id=int(event_id)^1011
+        event=get_object_or_404(EventModel, id=event_id)
+        if schedule==int(1):
+            if vote==int(1):
+                event.schedule1_going+=1
+            elif vote==int(2):
+                event.schedule1_not_going+=1
+            else:
+                event.schedule1_maybe+=1
+        else:
+            if vote==1:
+                event.schedule2_going+=1
+            elif vote==2:
+                event.schedule2_not_going+=1
+            else:
+                event.schedule2_maybe+=1
+        event.save()
+        print(event_id, email, vote, schedule)
+        # Save guest email (and optional vote/schedule) for this event
+        if email:
+            try:
+                GuestEmail.objects.create( eventId=event,email=email)
+            except Exception as e:
+                print(f"Failed to save GuestEmail: {e}")
+        return Response(True)
     
 class DateTimeModificationView(APIView):
     def post(self, request):
@@ -859,7 +900,7 @@ class DateTimeModificationView(APIView):
 
         
         day_time = data.get("date_time")
-        day_phase = data.get("dayPhase")
+        
         iso_code=data.get("iso_code")
         
         if not day_time:

@@ -289,10 +289,13 @@ class OrganizerEventShowtoPartnerSerializer(serializers.ModelSerializer):
         ]
 
 
-class EventInvitationSerializer(serializers.Serializer):
-    id=serializers.CharField(max_length=50)
 
+class GuestVotingSerializer(serializers.Serializer):
+    event_id=serializers.IntegerField()
+    email=serializers.EmailField()
+    vote=serializers.IntegerField()
+    schedule=serializers.IntegerField()
+    
 class DateTimeModificationSerializer(serializers.Serializer):
     date_time=serializers.CharField(max_length=100)
-    dayPhase=serializers.CharField(max_length=50)
     iso_code=serializers.CharField(max_length=10)
