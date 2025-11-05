@@ -4,11 +4,11 @@ services:
   # Django web application
   web:
     build: .
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8075"]
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "8075:8075"
     environment:
       - DEBUG=True
       - SECRET_KEY=django-insecure-96f&@ucxv8do0+2itsfag-)7o-+hr04+j9^s&_(zfeudkan*y%
@@ -21,9 +21,11 @@ services:
 
   # PostgreSQL database service
   db:
-    image: postgres:13
+    image: postgres:16
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5438:5438"
     environment:
       - POSTGRES_DB=dispozen_eventmanagement
       - POSTGRES_USER=postgres
