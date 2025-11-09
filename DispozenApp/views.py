@@ -1,4 +1,7 @@
 # from django.shortcuts import render
+import urllib.parse
+import urllib.request
+import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
@@ -14,7 +17,7 @@ from .countrytime import convert_utc_to_local
 from datetime import time
 from rest_framework import status, permissions
 from django.shortcuts import get_object_or_404
-
+from .googlemaps import geocode_location
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .permission import IsSuperAdminUser, IsAdminUser, IsPartnerUser, IsOrganizerUser
@@ -122,27 +125,27 @@ class DispozenUserLoginView(APIView):
     def post(self, request):
         email = request.data.get('email')
         password = request.data.get('password')
-        user=DispozenUser.objects.get(email=email)
-        
+
         if not email or not password:
             return Response({"error": "Email and password are required."}, status=status.HTTP_400_BAD_REQUEST)
-        # if (user.role=="partner" or user.role=="organizer") and user.is_verified==False:
-        #     return Response({"error": "First verify your email."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
+            
             user_obj = DispozenUser.objects.get(email=email)
         except DispozenUser.DoesNotExist:
+            
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
-        user = authenticate(request, username=user_obj.username, password=password)
+        
+        if not user_obj.check_password(password): 
+            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user = authenticate(request, username=user_obj.username, password=password) 
         if user:
-            serializer = DispozenUserSerializer(user)
-            # Generate JWT tokens for the user
-            token = get_tokens_for_user(user)
-            return Response(
-                {"message": "Login successful", "user": serializer.data, "tokens": token},
-                status=status.HTTP_200_OK
-            )
-        return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+            serializer = DispozenUserSerializer(user) 
+        token = get_tokens_for_user(user)
+        return Response({"message": "Login successful", "user": serializer.data, "tokens": token}, status=status.HTTP_200_OK)
+    
 
 class DispozenUserChangePasswordView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -454,8 +457,11 @@ class RequestEventView(APIView):
                 {"detail": "Event not found."}, 
                 status=status.HTTP_404_NOT_FOUND
             )
-
         
+        request_event=OrganizerSendRequestToPartner.objects.filter(partner_id=partner_id,event_id=event_id)
+        
+        if request_event.exists():
+            return Response({"error":"You already sent request to this id."},status=status.HTTP_400_BAD_REQUEST)
         request_data = {
             'organizer_id': organizer.id,
             'partner_id': partner.id,
@@ -521,8 +527,11 @@ class RequestEventView(APIView):
 class PartnerAcceptRequestListView(APIView):
     permission_classes = [IsOrganizerUser]
     def get(self, request,id):
-        
-        partnerlist = OrganizerSendRequestToPartner.objects.filter(event_id=id,status='accepted')
+        organizer_id=request.id
+        event=EventModel.objects.get(id=id)
+        if event.has_accepted:
+            return Response({"This event already confirmed"})
+        partnerlist = OrganizerSendRequestToPartner.objects.filter(organizer_id=organizer_id,event_id=id,status='accepted')
         serializer = OrganizerSelectPartnerSerializer(partnerlist, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -661,20 +670,20 @@ class OrganizerPartnerDealView(APIView):
 
 class SendEventEmailsView(APIView):
     permission_classes = [IsOrganizerUser]
-    def post(self, request, event_id):
+    def get(self, request, event_id):
         
         event = get_object_or_404(EventModel, pk=event_id)
 
     
-        subject = f"Reminder for Event: {event.name}" 
-        message = f"Dear Guest, don't forget about our upcoming event: {event.name}. See you there!"
+        subject = f"Reminder for Event: {event.event_name}" 
+        message = f"Dear Guest, don't forget about our upcoming event: {event.event_name}. See you there!"
 
     
         success = send_event_email(event_id, subject, message)
 
         if success:
             return Response(
-                {"message": f"Emails sent to all guests for event: {event.name}"},
+                {"message": f"Emails sent to all guests for event: {event.event_name}"},
                 status=status.HTTP_200_OK
             )
         else:
@@ -955,5 +964,57 @@ class DateTimeModificationView(APIView):
     
         time_str = result.strftime('%I:%M %p')
         return Response({"date_time": f"{date} {time_str}"}, status=200)
-        # return Response({"date_time": date, "time": time_str}, status=200)
         
+class MapView(APIView):
+    def get(self, request):
+        location = request.GET.get('location', '')  
+        category = request.GET.get('catagory', '')  
+        sub_category = request.GET.get('sub-catagory', '')
+        
+        # Geocode the location (returns lat, lon)
+        lan, lon = geocode_location(location)
+
+        # Ensure the parameters are not empty (optional check for debugging)
+        print(category, sub_category)
+
+        # Format the location as "lat,lon"
+        location = f"{lan},{lon}"
+        print(location)
+
+        radius = request.query_params.get('radius', 1500)  # Default to 1500 meters
+        
+        # Use category and sub_category
+        type_ = sub_category # This will be passed as 'type'
+        keyword = category  # This will be passed as 'keyword'
+
+        api_key = 'AIzaSyAtWL_lQ1is3Ej-K4tRnwqsj0pIZfgVGLc'  # Replace with your actual API key
+        
+        # Construct the Google Places API URL dynamically using the values
+        url = f'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={location}&radius={radius}&type={type_}&keyword={keyword}&key={api_key}'
+        print(url)
+
+        try:
+            # Make the API request to Google Places
+            response = urllib.request.urlopen(url)
+            data = json.loads(response.read().decode('utf-8'))
+
+            # Check if the status is OK and results exist
+            if data.get('status') == 'OK' and 'results' in data:
+                places = []
+                for place in data['results']:
+                    places.append({
+                        'name': place.get('name'),
+                        'address': place.get('vicinity'),
+                        'latitude': place['geometry']['location']['lat'],
+                        'longitude': place['geometry']['location']['lng'],
+                    })
+
+                # Return the response with list of places
+                return Response({'places': places}, status=status.HTTP_200_OK)
+
+            else:
+                return Response({'error': 'No results found or API request failed'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            # Catch any request-related errors
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
