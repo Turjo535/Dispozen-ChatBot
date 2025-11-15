@@ -5,7 +5,9 @@ from .views import DispozenUserRegistrationView,OTPVerificationView,SendOTPView,
 from .views import SuperAdminCreateAccountView,admininfo,DispozenAdminListView, DispozenOrganizerListView,DispozenPartnerListView,Delete_User,DispozenUsersOverView,RequestEventView
 from .views import ConfirmEventListView,InitialConfirmViewList,PartnerListView,EventDeleteView,OrganizerPartnerDealListView,OrganizerPartnerDealView,AllEventList,PartnerAcceptRequestListView,PartnerSuccessfulEventView,PaymentListView,  EventSchedulesConfirm,OrganizerPartnerUpdateProfileView,OrganizerConfirmPartner,SendEventEmailsView
 from .views import PartnerDashboardSuccessfullEventView,PartnerRequestListView,PartnerRequestConfirmationView,PartnerConfirmEventListView,EventListShowtoPartnerView,EventRequestAcceptByPartnerView
-from .views import CheckUserView,CreateEventView,DateTimeModificationView,EventInvitationView,GuestVotingView,MapView
+from .views import CheckUserView,CreateEventView,DateTimeModificationView,EventInvitationView,GuestVotingView,MapView,SelectPlaceView
+from .views import map_view
+
 urlpatterns = [
     # Token Refresh Endpoint
     path('refresh-token/', TokenRefreshView.as_view(), name='token-refresh'),
@@ -71,5 +73,7 @@ urlpatterns = [
     path('voting/',GuestVotingView.as_view(),name="Guest_voting"),
     path("datetime-modify/",DateTimeModificationView.as_view(),name="datetime-modify"),
     path("maps/",MapView.as_view()),
+    path('maps_view/<str:organizer_id>/',map_view,name='map_view'),
+    path('select-place/', SelectPlaceView.as_view(), name='select_place'),
 
 ]

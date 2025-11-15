@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import DispozenUser, EventModel, PartnerSuccessfulEvent,OrganizerSendRequestToPartner,PaymentModel,Notification,GuestEmail
+from .models import DispozenUser, EventModel, PartnerSuccessfulEvent,OrganizerSendRequestToPartner,PaymentModel,Notification,GuestEmail,SelectedPlace
 # Register your models here.
 class DispozenUserAdmin(admin.ModelAdmin):
     model = DispozenUser
@@ -29,6 +29,9 @@ class NotificationAdmin(admin.ModelAdmin):
 class GuestEmailAdmin(admin.ModelAdmin):
     model = GuestEmail
     list_display = [field.name for field in GuestEmail._meta.fields]
+class SelectedPlaceAdmin(admin.ModelAdmin):
+    model = SelectedPlace
+    list_display = [field.name for field in SelectedPlace._meta.fields]
 admin.site.register(PartnerSuccessfulEvent,PartnerSuccessfulEventAdmin)
 admin.site.register(OrganizerSendRequestToPartner,OrganizerSendRequestToPartnerAdmin)   
 admin.site.register(EventModel,EventModelAdmin)
@@ -36,3 +39,4 @@ admin.site.register(DispozenUser,DispozenUserAdmin)
 admin.site.register(PaymentModel,PaymentModelAdmin)
 admin.site.register(Notification,NotificationAdmin)
 admin.site.register(GuestEmail,GuestEmailAdmin)
+admin.site.register(SelectedPlace,SelectedPlaceAdmin)

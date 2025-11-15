@@ -122,3 +122,22 @@ class Notification(models.Model):
 class GuestEmail(models.Model):
     eventId=models.ForeignKey(EventModel, on_delete=models.CASCADE)
     email=models.EmailField()
+
+
+class SelectedPlace(models.Model):
+    organizer=models.ForeignKey(DispozenUser,on_delete=models.CASCADE,related_name='selected_places')
+    name = models.CharField(max_length=255)
+    address = models.TextField()
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    category = models.CharField(max_length=100, blank=True, null=True)
+    sub_category = models.CharField(max_length=100, blank=True, null=True)
+    location = models.CharField(max_length=100, blank=True, null=True)
+    selected_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'selected_places'
+        ordering = ['-selected_at']
+    
+    def __str__(self):
+        return f"{self.name} - {self.location}"

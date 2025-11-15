@@ -2,6 +2,7 @@
 import urllib.parse
 import urllib.request
 import json
+from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
@@ -10,6 +11,7 @@ from django.db import models
 from datetime import datetime
 from datetime import timedelta
 import pytz  
+from decouple import config
 from .serializers import DispozenUserRegistrationSerializer,DispozenUserSerializer, DateTimeModificationSerializer, CreateEventModelSerializer,DispozenAdminCreateSerializer,PartnerListSerializer,PaymentModelSerializer,OrganizerPartnerProfileUpdateSerializer,RequestEventSerializer,UpdateAdminProfileSerializer
 from .serializers import PartnerSuccessfulEventSerializer,OrganizerSendRequestToPartnerSerializer,DispozenPartnerSerializer,DispozenUpdateProfileInformationSerializer,ConfirmEventSerializer,InitialConfirmEventSerializer,AllEventSerializer,OrganizerSelectPartnerSerializer,OrganizerEventShowtoPartnerSerializer,GuestVotingSerializer
 from .models import DispozenUser, EventModel,PartnerSuccessfulEvent,OrganizerSendRequestToPartner,PaymentModel,Notification,GuestEmail
@@ -970,29 +972,35 @@ class MapView(APIView):
         location = request.GET.get('location', '')  
         category = request.GET.get('catagory', '')  
         sub_category = request.GET.get('sub-catagory', '')
+
+        # Check if required parameters are provided
+        if not location or not category or not sub_category:
+            return Response({'error': 'Missing required parameters (location, category, sub-category)'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Geocode the location (returns lat, lon)
-        lan, lon = geocode_location(location)
-
-        # Ensure the parameters are not empty (optional check for debugging)
-        print(category, sub_category)
+        try:
+            lan, lon = geocode_location(location)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         # Format the location as "lat,lon"
         location = f"{lan},{lon}"
-        print(location)
 
         radius = request.query_params.get('radius', 1500)  # Default to 1500 meters
-        
-        # Use category and sub_category
-        type_ = sub_category # This will be passed as 'type'
+        type_ = sub_category  # This will be passed as 'type'
         keyword = category  # This will be passed as 'keyword'
+        api_key = config('maps_key')
+        organizerlocation=DispozenUser.objects.filter(role='partner')
+        l=[]
 
-        api_key = 'AIzaSyAtWL_lQ1is3Ej-K4tRnwqsj0pIZfgVGLc'  # Replace with your actual API key
-        
-        # Construct the Google Places API URL dynamically using the values
+        for i in organizerlocation:
+            g1,g2=geocode_location(i.location)
+            
+            l.append([g1,g2])
+        print(l)
+        # Construct the Google Places API URL dynamically
         url = f'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={location}&radius={radius}&type={type_}&keyword={keyword}&key={api_key}'
-        print(url)
-
+        
         try:
             # Make the API request to Google Places
             response = urllib.request.urlopen(url)
@@ -1002,19 +1010,127 @@ class MapView(APIView):
             if data.get('status') == 'OK' and 'results' in data:
                 places = []
                 for place in data['results']:
-                    places.append({
-                        'name': place.get('name'),
-                        'address': place.get('vicinity'),
-                        'latitude': place['geometry']['location']['lat'],
-                        'longitude': place['geometry']['location']['lng'],
-                    })
+                    # if [place['geometry']['location']['lat'],place['geometry']['location']['lng']] in l:
+                        places.append({
+                            'name': place.get('name'),
+                            'address': place.get('vicinity'),
+                            'latitude': place['geometry']['location']['lat'],
+                            'longitude': place['geometry']['location']['lng'],
+                        })
 
                 # Return the response with list of places
                 return Response({'places': places}, status=status.HTTP_200_OK)
-
             else:
                 return Response({'error': 'No results found or API request failed'}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             # Catch any request-related errors
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+# def map_view(request):
+#     # context = {
+#     #     'location': request.GET.get('location', 'Khulna'),
+#     #     'type': request.GET.get('type', 'private'),
+#     #     'keyword': request.GET.get('keyword', 'Hospital'),
+#     # }
+#     return render(request, 'map_view.html')
+
+from rest_framework.decorators import api_view
+
+from django.views.decorators.csrf import csrf_exempt
+from decouple import config
+import json
+from .models import SelectedPlace
+
+# Your existing MapView stays the same
+
+def map_view(request,organizer_id):
+    
+    
+    # Pass the API key securely to the template
+    context = {
+        'maps_api_key': config('maps_key'),
+        'id':organizer_id
+    
+    }
+    print(context)
+    return render(request, 'map_view.html', context)
+
+
+from rest_framework.views import APIView
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import render, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from decouple import config
+from .models import SelectedPlace, DispozenUser
+import json
+
+
+def map_view(request, organizer_id):
+    """
+    Render the map view template with API key and organizer_id
+    """
+    context = {
+        'maps_api_key': config('maps_key'),
+        'organizer_id': organizer_id
+    }
+    print(context)
+    return render(request, 'map_view.html', context)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SelectPlaceView(APIView):
+    """
+    API View to save selected place to database with organizer as ForeignKey
+    """
+    
+    def post(self, request):
+        try:
+            data = request.data
+            
+            # Validate required fields
+            required_fields = ['name', 'address', 'latitude', 'longitude', 'organizer_id']
+            for field in required_fields:
+                if field not in data:
+                    return Response(
+                        {'error': f'Missing required field: {field}'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Get the DispozenUser instance using the organizer_id
+            try:
+                organizer = DispozenUser.objects.get(fb_id=data.get('organizer_id'))
+                
+            except DispozenUser.DoesNotExist:
+                return Response(
+                    {'error': 'Organizer not found'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Create the selected place
+            selected_place = SelectedPlace.objects.create(
+                name=data.get('name'),
+                address=data.get('address'),
+                latitude=data.get('latitude'),
+                longitude=data.get('longitude'),
+                category=data.get('category'),
+                sub_category=data.get('sub_category'),
+                location=data.get('location'),
+                organizer=organizer  # Assign the DispozenUser instance
+            )
+            print(selected_place)
+            return Response({
+                'success': True,
+                'message': 'Place selected successfully',
+                'place_id': selected_place.id,
+                'organizer_id': selected_place.organizer.fb_id  # ✅ Changed from organizer_id.id to organizer.fb_id
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

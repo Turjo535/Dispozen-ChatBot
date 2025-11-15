@@ -27,7 +27,7 @@ SECRET_KEY = config('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['dispozen.dsrt321.online', 'www.dispozen.dsrt321.online', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['dispozen.dsrt321.online', 'www.dispozen.dsrt321.online', 'localhost', '127.0.0.1','7d94b50a33ff.ngrok-free.app']
 
 CSRF_TRUSTED_ORIGINS = [
     'https://dispozen.dsrt321.online',
