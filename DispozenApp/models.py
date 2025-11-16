@@ -26,6 +26,7 @@ class DispozenUser(AbstractUser):
     description=models.TextField(blank=True,null=True)
     otp=models.CharField(max_length=6,blank=True,null=True)
     otp_created_at=models.DateTimeField(blank=True,null=True)
+    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
     
     
 
@@ -96,14 +97,46 @@ class InvitedGuests(models.Model):
     guest_email=models.EmailField(max_length=100)
     invited_at=models.DateTimeField(auto_now_add=True)
 
+
+
 class PaymentModel(models.Model):
-    user_id=models.ForeignKey(DispozenUser,on_delete=models.CASCADE)
-    package=models.CharField(max_length=100)
-    amount=models.FloatField()
-    payment_date=models.DateTimeField(auto_now_add=True)
-    payment_method=models.CharField(max_length=50,blank=True,null=True)
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('refunded', 'Refunded'),
+    ]
     
-    status=models.BooleanField(max_length=50,blank=True,null=True,default=False)
+    PAYMENT_METHOD_CHOICES = [
+        ('card', 'Card'),
+        ('google_pay', 'Google Pay'),
+        ('apple_pay', 'Apple Pay'),
+    ]
+    
+    user_id = models.ForeignKey(DispozenUser, on_delete=models.CASCADE, related_name='payments')
+    package = models.CharField(max_length=100)
+    amount = models.FloatField()
+    payment_date = models.DateTimeField(auto_now_add=True)
+    payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES, blank=True, null=True)
+  
+    stripe_payment_intent_id = models.CharField(max_length=255, unique=True, blank=True, null=True)
+    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    
+
+    currency = models.CharField(max_length=3, default='usd')
+    description = models.TextField(blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'payments'
+        ordering = ['-payment_date']
+    
+    def __str__(self):
+        return f"{self.user_id} - {self.package} - ${self.amount} - {self.payment_status}"
+
+
+
 
 class Notification(models.Model):
     partner = models.ForeignKey('DispozenUser', on_delete=models.CASCADE, related_name='notifications')  

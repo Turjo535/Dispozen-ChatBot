@@ -1,20 +1,29 @@
 # from django.shortcuts import render
+import stripe
 import urllib.parse
 import urllib.request
 import json
+from rest_framework.response import Response
+
+from django.http import HttpResponse
+from decouple import config
+
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db import models
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from datetime import datetime
 from datetime import timedelta
 import pytz  
 from decouple import config
 from .serializers import DispozenUserRegistrationSerializer,DispozenUserSerializer, DateTimeModificationSerializer, CreateEventModelSerializer,DispozenAdminCreateSerializer,PartnerListSerializer,PaymentModelSerializer,OrganizerPartnerProfileUpdateSerializer,RequestEventSerializer,UpdateAdminProfileSerializer
 from .serializers import PartnerSuccessfulEventSerializer,OrganizerSendRequestToPartnerSerializer,DispozenPartnerSerializer,DispozenUpdateProfileInformationSerializer,ConfirmEventSerializer,InitialConfirmEventSerializer,AllEventSerializer,OrganizerSelectPartnerSerializer,OrganizerEventShowtoPartnerSerializer,GuestVotingSerializer
-from .models import DispozenUser, EventModel,PartnerSuccessfulEvent,OrganizerSendRequestToPartner,PaymentModel,Notification,GuestEmail
+from .serializers import PaymentSerializer, CreatePaymentIntentSerializer
+from .models import DispozenUser, EventModel,PartnerSuccessfulEvent,OrganizerSendRequestToPartner,PaymentModel,Notification,GuestEmail,SelectedPlace
 from .countrytime import convert_utc_to_local
 from datetime import time
 from rest_framework import status, permissions
@@ -1035,12 +1044,10 @@ class MapView(APIView):
 #     # }
 #     return render(request, 'map_view.html')
 
-from rest_framework.decorators import api_view
 
-from django.views.decorators.csrf import csrf_exempt
-from decouple import config
-import json
-from .models import SelectedPlace
+
+
+
 
 # Your existing MapView stays the same
 
@@ -1056,17 +1063,6 @@ def map_view(request,organizer_id):
     print(context)
     return render(request, 'map_view.html', context)
 
-
-from rest_framework.views import APIView
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from django.shortcuts import render, get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-from decouple import config
-from .models import SelectedPlace, DispozenUser
-import json
 
 
 def map_view(request, organizer_id):
@@ -1134,3 +1130,316 @@ class SelectPlaceView(APIView):
                 {'error': str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+class OrganizerFinalLocation(APIView):
+    def get(self, request, fb_id):
+        try:
+            
+            organizer = DispozenUser.objects.filter(fb_id=fb_id).first()
+            
+            if not organizer:
+                return Response(
+                    {'error': 'Organizer not found'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            
+            selected_place = SelectedPlace.objects.filter(organizer=organizer).last()
+            
+            if selected_place:
+                print(f"Found selected place: {selected_place}")
+                return Response({
+                    'success': True,
+                    'has_location': True,
+                    'location': {
+                        'id': selected_place.id,
+                        'name': selected_place.name,
+                        'address': selected_place.address,
+                        'latitude': selected_place.latitude,
+                        'longitude': selected_place.longitude,
+                        'category': selected_place.category,
+                        'sub_category': selected_place.sub_category,
+                        'location': selected_place.location,
+                        'selected_at': selected_place.selected_at.isoformat()
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                print("No selected place found")
+                return Response({
+                    'success': True,
+                    'has_location': False,
+                    'location': None,
+                    'message': 'No location selected yet'
+                }, status=status.HTTP_200_OK)
+                
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+stripe.api_key = config('STRIPE_SECRET_KEY', default='')
+
+
+class CreatePaymentIntentView(APIView):
+    
+    
+    def post(self, request):
+        try:
+            
+            user_fb_id = request.data.get('user_fb_id')
+            amount = request.data.get('amount')
+            package = request.data.get('package')
+            print(user_fb_id) 
+            if not all([user_fb_id, amount, package]):
+                return Response(
+                    {'error': 'Missing required fields: user_fb_id, amount, package'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get user
+            try:
+                user = DispozenUser.objects.get(fb_id=user_fb_id)
+            except DispozenUser.DoesNotExist:
+                return Response(
+                    {'error': 'User not found'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Convert amount to cents
+            amount_in_cents = int(float(amount) * 100)
+            
+            # Get or create Stripe customer
+            if not user.stripe_customer_id:
+                stripe_customer = stripe.Customer.create(
+                    email=getattr(user, 'email', None),
+                    metadata={
+                        'fb_id': user.fb_id,
+                        'user_id': user.id
+                    }
+                )
+                user.stripe_customer_id = stripe_customer.id
+                user.save()
+            
+            # Create Payment Intent
+            payment_intent = stripe.PaymentIntent.create(
+                amount=amount_in_cents,
+                currency=request.data.get('currency', 'usd'),
+                customer=user.stripe_customer_id,
+                payment_method_types=['card'],
+                metadata={
+                    'package': package,
+                    'user_fb_id': user.fb_id,
+                    'description': request.data.get('description', '')
+                }
+            )
+            
+            # Create payment record
+            payment = PaymentModel.objects.create(
+                user_id=user,
+                package=package,
+                amount=float(amount),
+                currency=request.data.get('currency', 'usd'),
+                description=request.data.get('description', ''),
+                stripe_payment_intent_id=payment_intent.id,
+                stripe_customer_id=user.stripe_customer_id,
+                payment_status='pending'
+            )
+            
+            return Response({
+                'success': True,
+                'client_secret': payment_intent.client_secret,
+                'payment_intent_id': payment_intent.id,
+                'payment_id': payment.id,
+                'publishable_key': config('STRIPE_PUBLIC_KEY', default='')
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            print(f"Error creating payment intent: {str(e)}")
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class PaymentSuccessView(APIView):
+    def post(self, request):
+        try:
+            payment_intent_id = request.data.get('payment_intent_id')
+            
+            if not payment_intent_id:
+                return Response(
+                    {'error': 'payment_intent_id is required'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Retrieve payment intent from Stripe
+            payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+            
+            # Update payment in database
+            payment = PaymentModel.objects.filter(
+                stripe_payment_intent_id=payment_intent_id
+            ).first()
+            
+            if not payment:
+                return Response(
+                    {'error': 'Payment not found'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Determine payment method
+            if payment_intent.charges.data:
+                charge = payment_intent.charges.data[0]
+                payment_method_details = charge.payment_method_details
+                
+                if payment_method_details.type == 'card':
+                    if payment_method_details.card.wallet:
+                        wallet_type = payment_method_details.card.wallet.type
+                        if wallet_type == 'google_pay':
+                            payment.payment_method = 'google_pay'
+                        elif wallet_type == 'apple_pay':
+                            payment.payment_method = 'apple_pay'
+                        else:
+                            payment.payment_method = 'card'
+                    else:
+                        payment.payment_method = 'card'
+            
+            # Update payment status
+            if payment_intent.status == 'succeeded':
+                payment.payment_status = 'completed'
+            elif payment_intent.status == 'processing':
+                payment.payment_status = 'pending'
+            else:
+                payment.payment_status = 'failed'
+            
+            payment.save()
+            
+            from .serializers import PaymentSerializer
+            serializer = PaymentSerializer(payment)
+            
+            return Response({
+                'success': True,
+                'payment': serializer.data,
+                'message': 'Payment confirmed successfully'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            print(f"Error confirming payment: {str(e)}")
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StripeWebhookView(APIView):
+    """
+    Handle Stripe webhook events for real-time payment updates
+    """
+    
+    def post(self, request):
+        payload = request.body
+        sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+        webhook_secret = config('STRIPE_WEBHOOK_SECRET')
+        
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, webhook_secret
+            )
+        except ValueError:
+            return HttpResponse(status=400)
+        except stripe.error.SignatureVerificationError:
+            return HttpResponse(status=400)
+        
+        # Handle the event
+        if event['type'] == 'payment_intent.succeeded':
+            payment_intent = event['data']['object']
+            self.handle_payment_success(payment_intent)
+            
+        elif event['type'] == 'payment_intent.payment_failed':
+            payment_intent = event['data']['object']
+            self.handle_payment_failed(payment_intent)
+        
+        return HttpResponse(status=200)
+    
+    def handle_payment_success(self, payment_intent):
+        """Update payment status to completed"""
+        payment = PaymentModel.objects.filter(
+            stripe_payment_intent_id=payment_intent['id']
+        ).first()
+        
+        if payment:
+            payment.payment_status = 'completed'
+            
+            # Determine payment method from charges
+            if payment_intent.get('charges', {}).get('data'):
+                charge = payment_intent['charges']['data'][0]
+                payment_method_details = charge.get('payment_method_details', {})
+                
+                if payment_method_details.get('type') == 'card':
+                    wallet = payment_method_details.get('card', {}).get('wallet', {})
+                    wallet_type = wallet.get('type')
+                    
+                    if wallet_type == 'google_pay':
+                        payment.payment_method = 'google_pay'
+                    elif wallet_type == 'apple_pay':
+                        payment.payment_method = 'apple_pay'
+                    else:
+                        payment.payment_method = 'card'
+            
+            payment.save()
+            print(f"Payment {payment.id} marked as completed")
+    
+    def handle_payment_failed(self, payment_intent):
+        """Update payment status to failed"""
+        payment = PaymentModel.objects.filter(
+            stripe_payment_intent_id=payment_intent['id']
+        ).first()
+        
+        if payment:
+            payment.payment_status = 'failed'
+            payment.save()
+            print(f"Payment {payment.id} marked as failed")
+
+
+class PaymentHistoryView(APIView):
+    """
+    Get payment history for a user
+    """
+    
+    def get(self, request, fb_id):
+        try:
+            user = get_object_or_404(DispozenUser, fb_id=fb_id)
+            payments = PaymentModel.objects.filter(user_id=user)
+            serializer = PaymentSerializer(payments, many=True)
+            
+            return Response({
+                'success': True,
+                'payments': serializer.data,
+                'total_payments': payments.count()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+def payment_page(request):
+    return render(request, 'payment.html')
+
+def payment_success_page(request):
+    return render(request, 'payment-success.html')

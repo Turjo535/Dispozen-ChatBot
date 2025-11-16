@@ -299,3 +299,22 @@ class GuestVotingSerializer(serializers.Serializer):
 class DateTimeModificationSerializer(serializers.Serializer):
     date_time=serializers.CharField(max_length=100)
     iso_code=serializers.CharField(max_length=10)
+
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentModel
+        fields = [
+            'id', 'user_id', 'package', 'amount', 'payment_date', 
+            'payment_method', 'stripe_payment_intent_id', 
+            'payment_status', 'currency', 'description'
+        ]
+        read_only_fields = ['id', 'payment_date', 'stripe_payment_intent_id', 'payment_status']
+
+class CreatePaymentIntentSerializer(serializers.Serializer):
+    amount = serializers.FloatField(required=True)
+    package = serializers.CharField(required=True, max_length=100)
+    currency = serializers.CharField(default='usd', max_length=3)
+    description = serializers.CharField(required=False, allow_blank=True)
+    user_fb_id = serializers.CharField(required=True)
