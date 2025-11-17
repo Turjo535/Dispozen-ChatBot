@@ -27,9 +27,10 @@ SECRET_KEY = config('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['dispozen.dsrt321.online', 'www.dispozen.dsrt321.online', 'localhost', '127.0.0.1','7d94b50a33ff.ngrok-free.app']
+ALLOWED_HOSTS = ['dispozen.dsrt321.online', 'www.dispozen.dsrt321.online', 'localhost', '127.0.0.1','6e87b0ca8b09.ngrok-free.app']
 
 CSRF_TRUSTED_ORIGINS = [
+    'https://6e87b0ca8b09.ngrok-free.app',
     'https://dispozen.dsrt321.online',
     'http://dispozen.dsrt321.online',  # if using HTTP for testing (not recommended for production)
     'wss://dispozen.dsrt321.online',  # For secure WebSocket connections (use 'ws' for non-secure connections)

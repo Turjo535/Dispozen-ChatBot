@@ -88,5 +88,6 @@ urlpatterns = [
     path('stripe-webhook/', StripeWebhookView.as_view(), name='stripe_webhook'),
     path('payment-history/<str:fb_id>/', PaymentHistoryView.as_view(), name='payment_history'),
     path('payment/', payment_page, name='payment_page'),
-    path('payment-success/', payment_success_page, name='payment_success_page'),
+    # path('payment-success/', payment_success_page, name='payment_success_page'),
+    path('payment-success.html', payment_success_page, name='payment_success_page'),  
 ]
