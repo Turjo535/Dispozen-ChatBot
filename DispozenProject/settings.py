@@ -27,10 +27,10 @@ SECRET_KEY = config('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['dispozen.dsrt321.online', 'www.dispozen.dsrt321.online', 'localhost', '127.0.0.1','6e87b0ca8b09.ngrok-free.app']
+ALLOWED_HOSTS = ['dispozen.dsrt321.online', 'www.dispozen.dsrt321.online', 'localhost', '127.0.0.1','bbc158ab8c75.ngrok-free.app']
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://6e87b0ca8b09.ngrok-free.app',
+    'https://bbc158ab8c75.ngrok-free.app',
     'https://dispozen.dsrt321.online',
     'http://dispozen.dsrt321.online',  # if using HTTP for testing (not recommended for production)
     'wss://dispozen.dsrt321.online',  # For secure WebSocket connections (use 'ws' for non-secure connections)
@@ -72,54 +72,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",
-#     "https://myfrontend.com",
-#     "http://172.30.48.1:3000",
-# ]
-
-# CORS_ALLOWED_ORIGINS = [
-#     "http://172.30.48.1:3000",
-#     "http://localhost:3000",  
-#     "http://127.0.0.1:3000",
-    
-#     # "ws://103.186.20.116:9000",
-#     # "wss://103.186.20.116:9000",
-# ]
-# CORS_ALLOW_HEADERS = list(default_headers) + [
-#     'Authorization',
-# ]
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-# CORS_ALLOW_METHODS = [
-#     'DELETE',
-#     'GET',
-#     'OPTIONS',
-#     'PATCH',
-#     'POST',
-#     'PUT',
-# ]
 
-# CORS_ALLOW_HEADERS = [
-#     'accept',
-#     'accept-encoding',
-#     'authorization',
-#     'content-type',
-#     'dnt',
-#     'origin',
-#     'user-agent',
-#     'x-csrftoken',
-#     'x-requested-with',
-#     'ngrok-skip-browser-warning',
-# ]
-# CORS_ALLOW_HEADERS = [
-#     'content-type',
-#     'accept',
-#     'authorization',
-#     'x-csrftoken',
-#     'x-requested-with',
-# ]
 
 ROOT_URLCONF = 'DispozenProject.urls'
 
@@ -216,10 +172,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
-  
+
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
-  
+
 }
 
 SIMPLE_JWT = {
