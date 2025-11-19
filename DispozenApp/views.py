@@ -538,7 +538,8 @@ class RequestEventView(APIView):
 class PartnerAcceptRequestListView(APIView):
     permission_classes = [IsOrganizerUser]
     def get(self, request,id):
-        organizer_id=request.id
+        
+        organizer_id=request.user.id
         event=EventModel.objects.get(id=id)
         if event.has_accepted:
             return Response({"This event already confirmed"})
@@ -755,7 +756,7 @@ class EventRequestAcceptByPartnerView(APIView):
         except DispozenUser.DoesNotExist:
             return Response({"detail": "Organizer not found."}, status=status.HTTP_404_NOT_FOUND)
         
-        # Check if already accepted
+        
         if OrganizerSendRequestToPartner.objects.filter(
             event_id=event_id, 
             partner_id=partner.id, 
@@ -865,7 +866,8 @@ class CheckUserView(APIView):
                 "is_varified":user.is_verified,
                 "fb_id":user.fb_id, 
                 "id":user.id,
-                "role":user.role
+                "role":user.role,
+                "country":user.location,
                 }, status=200)
         except DispozenUser.DoesNotExist:
             return Response({"error":"User not found"},status=404)
@@ -1180,7 +1182,31 @@ class OrganizerFinalLocation(APIView):
             )
         
 
-
+class OrganizerLocationFetchFromManyChat(APIView):
+    def get(self,request,fb_id):
+        try:
+            organizer=DispozenUser.objects.get(fb_id=fb_id)
+            selected_place=SelectedPlace.objects.filter(organizer=organizer).last()
+            
+                
+            if selected_place:
+                selected_place.manychat_location=True
+                selected_place.save()
+                return Response({
+                    'success': True,
+                    'location': {
+                        
+                        'address': selected_place.address,
+                        
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'message': 'No location found for this organizer'
+                }, status=status.HTTP_404_NOT_FOUND)
+        except DispozenUser.DoesNotExist:
+            return Response({'error':'Organizer not found'},status=status.HTTP_404_NOT_FOUND)
 
 
 

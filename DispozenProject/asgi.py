@@ -35,7 +35,7 @@ import os
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from DispozenApp.middleware import JWTAuthMiddleware
-import DispozenApp.routing  # Assuming the routing.py for the app is in DispozenApp
+import DispozenApp.routing  
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'DispozenProject.settings')
 

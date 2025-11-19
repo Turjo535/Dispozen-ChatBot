@@ -127,7 +127,7 @@ class PaymentModel(models.Model):
     currency = models.CharField(max_length=3, default='usd')
     description = models.TextField(blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+    manychat_payment=models.BooleanField(default=False)
     class Meta:
         db_table = 'payments'
         ordering = ['-payment_date']
@@ -166,6 +166,7 @@ class SelectedPlace(models.Model):
     category = models.CharField(max_length=100, blank=True, null=True)
     sub_category = models.CharField(max_length=100, blank=True, null=True)
     location = models.CharField(max_length=100, blank=True, null=True)
+    manychat_location=models.BooleanField(default=False)
     selected_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
