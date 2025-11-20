@@ -1053,41 +1053,38 @@ class MapView(APIView):
 
 # Your existing MapView stays the same
 
-def map_view(request,organizer_id):
+# def map_view(request,organizer_id):
     
     
-    # Pass the API key securely to the template
-    context = {
-        'maps_api_key': config('maps_key'),
-        'id':organizer_id
+#     # Pass the API key securely to the template
+#     context = {
+#         'maps_api_key': config('maps_key'),
+#         'id':organizer_id
     
-    }
-    print(context)
-    return render(request, 'map_view.html', context)
+#     }
+    
+#     return render(request, 'map_view.html', context)
 
 
 
 def map_view(request, organizer_id):
-    """
-    Render the map view template with API key and organizer_id
-    """
+    
     context = {
         'maps_api_key': config('maps_key'),
         'organizer_id': organizer_id
     }
-    print(context)
+    
     return render(request, 'map_view.html', context)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
 class SelectPlaceView(APIView):
-    """
-    API View to save selected place to database with organizer as ForeignKey
-    """
     
     def post(self, request):
+        print("SelectPlaceView called")
         try:
             data = request.data
+            print("Received data:", data)
             
             # Validate required fields
             required_fields = ['name', 'address', 'latitude', 'longitude', 'organizer_id']
@@ -1101,37 +1098,57 @@ class SelectPlaceView(APIView):
             # Get the DispozenUser instance using the organizer_id
             try:
                 organizer = DispozenUser.objects.get(fb_id=data.get('organizer_id'))
-                
+                print("Organizer found:", organizer)
             except DispozenUser.DoesNotExist:
                 return Response(
                     {'error': 'Organizer not found'}, 
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            # Create the selected place
+            # ✅ Convert latitude/longitude to float
+            try:
+                latitude = float(data.get('latitude'))
+                longitude = float(data.get('longitude'))
+            except (ValueError, TypeError) as e:
+                return Response(
+                    {'error': f'Invalid latitude/longitude format: {str(e)}'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Create the SelectedPlace object
             selected_place = SelectedPlace.objects.create(
                 name=data.get('name'),
                 address=data.get('address'),
-                latitude=data.get('latitude'),
-                longitude=data.get('longitude'),
-                category=data.get('category'),
-                sub_category=data.get('sub_category'),
-                location=data.get('location'),
-                organizer=organizer  # Assign the DispozenUser instance
+                latitude=latitude,  # ✅ Use converted float
+                longitude=longitude,  # ✅ Use converted float
+                category=data.get('category', ''),  # ✅ Provide default if missing
+                sub_category=data.get('sub_category', ''),  # ✅ Provide default if missing
+                location=data.get('location', ''),  # ✅ Provide default if missing
+                organizer=organizer
             )
-            print(selected_place)
+            
+            print("Place created successfully:", selected_place.id)
+            
             return Response({
                 'success': True,
                 'message': 'Place selected successfully',
                 'place_id': selected_place.id,
-                'organizer_id': selected_place.organizer.fb_id  # ✅ Changed from organizer_id.id to organizer.fb_id
+                'organizer_id': selected_place.organizer.fb_id
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
+            # ✅ Print full error for debugging
+            import traceback
+            print("Error occurred:")
+            print(traceback.format_exc())
+            
             return Response(
                 {'error': str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+        
+    
         
 class OrganizerFinalLocation(APIView):
     def get(self, request, fb_id):
@@ -1146,7 +1163,7 @@ class OrganizerFinalLocation(APIView):
                 )
             
             
-            selected_place = SelectedPlace.objects.filter(organizer=organizer).last()
+            selected_place = SelectedPlace.objects.filter(organizer=organizer).latest('selected_at')
             
             if selected_place:
                 print(f"Found selected place: {selected_place}")
@@ -1186,7 +1203,7 @@ class OrganizerLocationFetchFromManyChat(APIView):
     def get(self,request,fb_id):
         try:
             organizer=DispozenUser.objects.get(fb_id=fb_id)
-            selected_place=SelectedPlace.objects.filter(organizer=organizer).last()
+            selected_place=SelectedPlace.objects.filter(organizer=organizer,manychat_location=False).last()
             
                 
             if selected_place:
@@ -1469,3 +1486,26 @@ def payment_page(request):
 
 def payment_success_page(request):
     return render(request, 'payment-success.html')
+class ManyChatPaymentCheck(APIView):
+
+    def get(self,request,fb_id):
+        try:
+            user=DispozenUser.objects.get(fb_id=fb_id)
+            payments=PaymentModel.objects.filter(user_id=user,manychat_payment=False).latest('updated_at')
+            print(payments)
+            print(payments.manychat_payment)
+            if payments:
+                if payments.manychat_payment==False:
+                    print(payments.manychat_payment)
+                    payments.manychat_payment=True
+                    payments.save()
+                    return Response({'success':payments.package},status=status.HTTP_200_OK)
+                else:
+                    return Response({'Payment Package':False},status=status.HTTP_200_OK)
+            else:
+                return Response({'success':False},status=status.HTTP_404_NOT_FOUND)
+        except DispozenUser.DoesNotExist:
+            return Response({'error':'User not found'},status=status.HTTP_404_NOT_FOUND)
+
+# def payment_success_page(request):
+#     return render(request, 'payment-success.html')

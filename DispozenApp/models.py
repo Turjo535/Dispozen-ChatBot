@@ -166,8 +166,9 @@ class SelectedPlace(models.Model):
     category = models.CharField(max_length=100, blank=True, null=True)
     sub_category = models.CharField(max_length=100, blank=True, null=True)
     location = models.CharField(max_length=100, blank=True, null=True)
-    manychat_location=models.BooleanField(default=False)
+    manychat_location=models.BooleanField(default=False,null=True,blank=True)
     selected_at = models.DateTimeField(auto_now_add=True)
+    
     
     class Meta:
         db_table = 'selected_places'

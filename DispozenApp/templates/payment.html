@@ -223,11 +223,12 @@
                 } else if (paymentIntent && paymentIntent.status === 'succeeded') {
                     // Payment succeeded
                     await confirmPaymentSuccess(paymentIntent.id);
-                    showMessage('Payment successful!', 'success');
+                    showMessage('Payment successful! Redirecting to Messenger...', 'success');
                     
-                    // Redirect after 2 seconds
+                    // ✅ Redirect to Messenger after 2 seconds
                     setTimeout(() => {
-                        window.location.href = '/api/payment-success.html?payment_intent=' + paymentIntent.id;
+                        console.log('Redirecting to Messenger...');
+                        window.location.href = 'https://m.me/dispozen.bot?ref=w43967400';
                     }, 2000);
                 }
                 
@@ -248,7 +249,8 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        payment_intent_id: paymentIntentId
+                        payment_intent_id: paymentIntentId,
+                        user_fb_id: userFbId
                     })
                 });
                 
