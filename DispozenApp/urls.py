@@ -5,7 +5,7 @@ from .views import DispozenUserRegistrationView,OTPVerificationView,SendOTPView,
 from .views import SuperAdminCreateAccountView,admininfo,DispozenAdminListView, DispozenOrganizerListView,DispozenPartnerListView,Delete_User,DispozenUsersOverView,RequestEventView
 from .views import ConfirmEventListView,InitialConfirmViewList,PartnerListView,EventDeleteView,OrganizerPartnerDealListView,OrganizerPartnerDealView,AllEventList,PartnerAcceptRequestListView,PartnerSuccessfulEventView,PaymentListView,  EventSchedulesConfirm,OrganizerPartnerUpdateProfileView,OrganizerConfirmPartner,SendEventEmailsView
 from .views import PartnerDashboardSuccessfullEventView,PartnerRequestListView,PartnerRequestConfirmationView,PartnerConfirmEventListView,EventListShowtoPartnerView,EventRequestAcceptByPartnerView
-from .views import CheckUserView,CreateEventView,DateTimeModificationView,EventInvitationView,GuestVotingView,MapView,SelectPlaceView,OrganizerFinalLocation,OrganizerLocationFetchFromManyChat
+from .views import CheckUserView,CreateEventView,DateTimeModificationView,EventInvitationView,GuestVotingView,MapView,SelectPlaceView,OrganizerFinalLocation,OrganizerLocationFetchFromManyChat,ManyChatPaymentCheck
 from .views import map_view,payment_page,payment_success_page
 from .views import (
     CreatePaymentIntentView, 
@@ -81,6 +81,7 @@ urlpatterns = [
     path("maps/",MapView.as_view()),
     path('maps_view/<str:organizer_id>/',map_view,name='map_view'),
     path('select-place/', SelectPlaceView.as_view(), name='select_place'),
+    
     path('organizer-location/<str:fb_id>/',OrganizerFinalLocation.as_view(),name='Organizer_final_location'),
     path('manychat_location-fetch/<str:fb_id>/',OrganizerLocationFetchFromManyChat.as_view(),name='Organizer_location_fetch_from_manychat'),
     path('create-payment-intent/', CreatePaymentIntentView.as_view(), name='create_payment_intent'),
@@ -88,6 +89,7 @@ urlpatterns = [
     path('stripe-webhook/', StripeWebhookView.as_view(), name='stripe_webhook'),
     path('payment-history/<str:fb_id>/', PaymentHistoryView.as_view(), name='payment_history'),
     path('payment/', payment_page, name='payment_page'),
+    path('manychat-payment-check/<str:fb_id>/',ManyChatPaymentCheck.as_view(),name='manychat_payment_check'),
     # path('payment-success/', payment_success_page, name='payment_success_page'),
     path('payment-success.html', payment_success_page, name='payment_success_page'),  
 ]
