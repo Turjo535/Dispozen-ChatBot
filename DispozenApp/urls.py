@@ -15,9 +15,9 @@ from .views import (
 )
 
 urlpatterns = [
-    # Token Refresh Endpoint
+    
     path('refresh-token/', TokenRefreshView.as_view(), name='token-refresh'),
-    # Authentication Endpoints
+    
     path('register/', DispozenUserRegistrationView.as_view(), name='register'),
     path('login/', DispozenUserLoginView.as_view(), name='login'),
     path('send-otp/', SendOTPView.as_view(), name='send-otp'),
@@ -26,11 +26,10 @@ urlpatterns = [
     path('change-password/', DispozenUserChangePasswordView.as_view(), name='change-password'),
     path('disable-account/<int:id>/', DispozenUserDisableAccountView.as_view(), name='disable-account'),
     
-    # path('enable-account/', DispozenUserEnableAccountView.as_view(), name='enable-account'),
+    
     
     path('account/', DispozenAdminAccountSettingProfileView.as_view(), name='update-profile-picture'),
-    # Admin Management Endpoints
-    #Admin Dashboard Endpoints
+    
     path('super-admin-create-account/', SuperAdminCreateAccountView.as_view(), name='super-admin-create-account'),
     path('admin-info/', admininfo.as_view(), name='admin-info'),
     path('admin-list/', DispozenAdminListView.as_view(), name='admin-list'),
