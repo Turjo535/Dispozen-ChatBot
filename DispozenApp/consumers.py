@@ -10,6 +10,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         
         user = self.scope.get('user')
+        print(f"🔗 Attempting WebSocket connection for user: {getattr(user, 'id', 'Anonymous')}")
         
         if not user or user.is_anonymous:
             print("❌ Unauthenticated WebSocket connection attempt.")

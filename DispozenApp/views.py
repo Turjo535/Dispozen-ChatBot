@@ -487,8 +487,8 @@ class RequestEventView(APIView):
 
             # Create notification in database
             notification_data = {
-                'partner': partner,
-                'organizer': organizer,
+                'sender_id': partner,
+                'reciever_id': organizer,
                 'event': event,
                 'title': 'New Partnership Request',
                 'content': f'{organizer.name} has sent you a request for an event.',
@@ -506,8 +506,8 @@ class RequestEventView(APIView):
                 "title": notification.title,
                 "content": notification.content,
                 "notification_type": notification.notification_type,
-                "organizer_id": organizer.id,
-                "organizer_name": organizer.name,
+                "sender_id": organizer.id,
+                "reciever_id": organizer.name,
                 "event_id": event.id,
                 "event_name": event.name if hasattr(event, 'name') else None,
                 "created_at": notification.created_at.isoformat() if hasattr(notification, 'created_at') else None,
@@ -1027,7 +1027,9 @@ class MapView(APIView):
                             'address': place.get('vicinity'),
                             'latitude': place['geometry']['location']['lat'],
                             'longitude': place['geometry']['location']['lng'],
+                            'rating': place.get('rating'),
                         })
+                
 
                 # Return the response with list of places
                 return Response({'places': places}, status=status.HTTP_200_OK)

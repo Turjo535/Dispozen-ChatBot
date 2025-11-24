@@ -139,8 +139,8 @@ class PaymentModel(models.Model):
 
 
 class Notification(models.Model):
-    partner = models.ForeignKey('DispozenUser', on_delete=models.CASCADE, related_name='notifications')  
-    organizer = models.ForeignKey('DispozenUser', on_delete=models.CASCADE)  
+    sender_id = models.ForeignKey('DispozenUser', on_delete=models.CASCADE, related_name='notifications')  
+    reciever_id = models.ForeignKey('DispozenUser', on_delete=models.CASCADE)  
     event = models.ForeignKey('EventModel', on_delete=models.CASCADE)  
     title = models.CharField(max_length=255)  
     content = models.TextField()  

@@ -246,11 +246,23 @@
               marker.addListener('click', () => {
                   const content = `
                       <div style="padding: 10px; min-width: 250px;">
-                          <h3 style="margin: 0 0 10px 0; color: #333;">${escapeHtml(place.name)}</h3>
-                          <p style="margin: 0 0 5px 0; color: #666;">${escapeHtml(place.address)}</p>
-                          <p style="margin: 0 0 10px 0; font-size: 12px; color: #999;">
-                              Lat: ${place.latitude}, Lng: ${place.longitude}
-                          </p>
+   <div style="padding: 10px; min-width: 250px;">
+    <h3 style="margin: 0 0 10px 0; color: #006400; font-weight: bold;">
+        Place Name: <span style="color: #00008B; font-weight: bold;">${escapeHtml(place.name)}</span>
+    </h3>
+    <p style="margin: 0 0 5px 0; color: #006400; font-weight: bold;">
+        Address: <span style="color: #00008B; font-weight: bold;">${escapeHtml(place.address)}</span>
+    </p>
+    <p style="margin: 0 0 5px 0; color: #006400; font-weight: bold;">
+        Rating: <span style="color: #00008B; font-weight: bold;">${escapeHtml(place.rating)}</span>
+    </p>
+    <p style="margin: 0 0 10px 0; font-size: 12px; color: #006400; font-weight: bold;">
+        Lat: <span style="color: #00008B; font-weight: bold;">${place.latitude}</span>, 
+        Lng: <span style="color: #00008B; font-weight: bold;">${place.longitude}</span>
+    </p>
+</div>
+
+
                           <button
                               class="select-place-btn"
                               onclick="selectPlace(${index})"
@@ -365,6 +377,7 @@
               li.innerHTML = `
                   <strong>${index + 1}. ${escapeHtml(place.name)}</strong>
                   <span>${escapeHtml(place.address)}</span>
+                  <span> (Rating: ${escapeHtml(place.rating)})</span>
               `;
 
               li.addEventListener('click', () => {
