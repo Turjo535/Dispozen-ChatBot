@@ -257,7 +257,7 @@ class EventDetailsOrganizerSendRequestSerializer(serializers.ModelSerializer):
 class RequestEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrganizerSendRequestToPartner
-        fields = ['event_id', 'sender_id', 'reciever_id','message']
+        fields = ['organizer_id', 'partner_id', 'event_id','message']
         
 
 class OrganizerSendRequestToPartnerSerializer(serializers.ModelSerializer):

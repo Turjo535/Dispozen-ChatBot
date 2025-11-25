@@ -204,17 +204,21 @@ class DispozenUserDisableAccountView(APIView):
 #         return Response({"message": "Account enabled successfully."}, status=status.HTTP_200_OK)
 
 class DispozenUserForgotPasswordResetView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    
 
     def post(self, request):
-        user = request.user
         
+        email= request.data.get('email')
+        otp= request.data.get('otp')
         new_password = request.data.get('new_password')
         confirm_password = request.data.get('confirm_password')
-
-        
+        user=DispozenUser.objects.get(email=email)
+        if user is None:
+            return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
         if new_password != confirm_password:
             return Response({"error": "New password and confirm password do not match."}, status=status.HTTP_400_BAD_REQUEST)
+        if user.otp != otp or datetime.now(pytz.utc) - user.otp_created_at > timedelta(minutes=5):
+            return Response({"error": "Invalid OTP or you are running out of time."}, status=status.HTTP_400_BAD_REQUEST)
         user.set_password(new_password)
         user.save()
         return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
@@ -487,8 +491,8 @@ class RequestEventView(APIView):
 
             # Create notification in database
             notification_data = {
-                'sender_id': partner,
-                'reciever_id': organizer,
+                'sender_id': organizer,
+                'reciever_id': partner,
                 'event': event,
                 'title': 'New Partnership Request',
                 'content': f'{organizer.name} has sent you a request for an event.',
@@ -787,8 +791,8 @@ class EventRequestAcceptByPartnerView(APIView):
         
         # Create notification for ORGANIZER
         notification = Notification.objects.create(
-            partner=partner,  # Who accepted
-            organizer=organizer,  # Who will receive notification
+            sender_id=partner,  # Who accepted
+            reciever_id=organizer,  # Who will receive notification
             event=event,
             title='Partner Request Accepted',
             content=f'{partner.name} has accepted your event request.',
