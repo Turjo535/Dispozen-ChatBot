@@ -91,7 +91,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 }))
             
             elif message_type == 'get_notifications':
-                
                 limit = data.get('limit', 10)
                 notifications = await self.get_unread_notifications(limit)
                 unread_count = await self.get_unread_count()
@@ -102,7 +101,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 }))
             
             elif message_type == 'get_all_notifications':
-                
                 limit = data.get('limit', 10)
                 notifications = await self.get_all_notifications(limit)
                 await self.send(text_data=json.dumps({
@@ -132,31 +130,39 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         """Send notification to WebSocket client (called by channel_layer.group_send)."""
         message = event.get('message', {})
         
-       
         await self.send(text_data=json.dumps({
             'type': 'notification',
             'data': {
-                'content': message.get('content')
+                'id': message.get('id'),
+                'content': message.get('content'),
+                'sender_id': message.get('sender_id'),
+                'reciever_id': message.get('reciever_id'),
+                'event_id': message.get('event_id'),
+                'created_at': message.get('created_at')
             }
         }))
         
         print(f"📧 Notification sent: {message.get('content', 'N/A')}")
 
     
-    
     @database_sync_to_async
     def get_unread_notifications(self, limit=10):
         """
-        Fetch unread notifications - returns only content.
-        FIXED: Now checks BOTH partner and organizer fields.
+        Fetch unread notifications with full details.
         """
         try:
-            
             notifications = Notification.objects.filter(
-                Q(partner=self.user, is_read=False) | Q(organizer=self.user, is_read=False)
+                reciever_id=self.user, is_read=False
             ).order_by('-created_at')[:limit]
             
-            return [{'content': n.content} for n in notifications]
+            return [{
+                'id': n.id,
+                'content': n.content,
+                'sender_id': n.sender_id_id,
+                'reciever_id': n.reciever_id_id,
+                'event_id': n.event_id,
+                'created_at': n.created_at.isoformat()
+            } for n in notifications]
         except Exception as e:
             print(f"❌ Error fetching notifications: {str(e)}")
             return []
@@ -164,16 +170,21 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_all_notifications(self, limit=10):
         """
-        Fetch all notifications (read + unread) - returns only content.
-        FIXED: Now checks BOTH partner and organizer fields.
+        Fetch all notifications (read + unread) with full details.
         """
         try:
-            
             notifications = Notification.objects.filter(
-                Q(partner=self.user) | Q(organizer=self.user)
+                reciever_id=self.user
             ).order_by('-created_at')[:limit]
             
-            return [{'content': n.content} for n in notifications]
+            return [{
+                'id': n.id,
+                'content': n.content,
+                'sender_id': n.sender_id_id,
+                'reciever_id': n.reciever_id_id,
+                'event_id': n.event_id,
+                'created_at': n.created_at.isoformat()
+            } for n in notifications]
         except Exception as e:
             print(f"❌ Error fetching notifications: {str(e)}")
             return []
@@ -182,12 +193,10 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     def get_unread_count(self):
         """
         Get count of unread notifications.
-        FIXED: Now checks BOTH partner and organizer fields.
         """
         try:
-            
             return Notification.objects.filter(
-                Q(partner=self.user, is_read=False) | Q(organizer=self.user, is_read=False)
+                reciever_id=self.user, is_read=False
             ).count()
         except Exception as e:
             print(f"❌ Error counting notifications: {str(e)}")
@@ -197,12 +206,10 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     def mark_notification_as_read(self, notification_id):
         """
         Mark a notification as read.
-        FIXED: Now checks BOTH partner and organizer fields.
         """
         try:
-            
             notification = Notification.objects.get(
-                Q(id=notification_id) & (Q(partner=self.user) | Q(organizer=self.user))
+                id=notification_id, reciever_id=self.user
             )
             notification.is_read = True
             notification.save(update_fields=['is_read'])
@@ -219,16 +226,13 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     def mark_all_as_read(self):
         """
         Mark all notifications as read.
-        FIXED: Now checks BOTH partner and organizer fields.
         """
         try:
-            
             count = Notification.objects.filter(
-                Q(partner=self.user, is_read=False) | Q(organizer=self.user, is_read=False)
+                reciever_id=self.user, is_read=False
             ).update(is_read=True)
             print(f"✅ Marked {count} notifications as read")
             return count
         except Exception as e:
             print(f"❌ Error marking all as read: {str(e)}")
             return 0
-
