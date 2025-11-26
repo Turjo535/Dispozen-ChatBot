@@ -6,7 +6,7 @@ from .views import SuperAdminCreateAccountView,admininfo,DispozenAdminListView, 
 from .views import ConfirmEventListView,InitialConfirmViewList,PartnerListView,EventDeleteView,OrganizerPartnerDealListView,OrganizerPartnerDealView,AllEventList,PartnerAcceptRequestListView,PartnerSuccessfulEventView,PaymentListView,  EventSchedulesConfirm,OrganizerPartnerUpdateProfileView,OrganizerConfirmPartner,SendEventEmailsView
 from .views import PartnerDashboardSuccessfullEventView,PartnerRequestListView,PartnerRequestConfirmationView,PartnerConfirmEventListView,EventListShowtoPartnerView,EventRequestAcceptByPartnerView
 from .views import CheckUserView,CreateEventView,DateTimeModificationView,EventInvitationView,GuestVotingView,MapView,SelectPlaceView,OrganizerFinalLocation,OrganizerLocationFetchFromManyChat,ManyChatPaymentCheck
-from .views import map_view,payment_page,payment_success_page
+from .views import map_view,payment_page,payment_success_page,ThankYouPageView
 from .views import (
     CreatePaymentIntentView, 
     PaymentSuccessView, 
@@ -82,7 +82,9 @@ urlpatterns = [
     path('select-place/', SelectPlaceView.as_view(), name='select_place'),
     
     path('organizer-location/<str:fb_id>/',OrganizerFinalLocation.as_view(),name='Organizer_final_location'),
+    
     path('manychat_location-fetch/<str:fb_id>/',OrganizerLocationFetchFromManyChat.as_view(),name='Organizer_location_fetch_from_manychat'),
+    path('thank.html/', ThankYouPageView, name='thank_you'),
     path('create-payment-intent/', CreatePaymentIntentView.as_view(), name='create_payment_intent'),
     path('payment-success/', PaymentSuccessView.as_view(), name='payment_success'),
     path('stripe-webhook/', StripeWebhookView.as_view(), name='stripe_webhook'),

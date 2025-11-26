@@ -3,60 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Successful</title>
+    <title>Location Selection Confirmation</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
         body {
             font-family: Arial, sans-serif;
             background: #f5f5f5;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh;
+            margin: 0;
         }
-        
         .container {
-            max-width: 500px;
             background: white;
             padding: 40px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             text-align: center;
+            max-width: 500px;
+            width: 100%;
         }
-        
-        .success-icon {
-            width: 80px;
-            height: 80px;
-            background: #28a745;
-            border-radius: 50%;
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .success-icon::after {
-            content: "✓";
-            color: white;
-            font-size: 48px;
-            font-weight: bold;
-        }
-        
         h1 {
             color: #333;
-            margin-bottom: 10px;
-        }
-        
-        p {
-            color: #666;
             margin-bottom: 20px;
         }
-        
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
         .btn {
             display: inline-block;
             background: #5469d4;
@@ -66,7 +45,6 @@
             text-decoration: none;
             transition: background 0.3s;
         }
-        
         .btn:hover {
             background: #4354bd;
         }
@@ -74,10 +52,9 @@
 </head>
 <body>
     <div class="container">
-        <div class="success-icon"></div>
-        <h1>Payment Successful!</h1>
-        <p>Thank you for your payment. Your transaction has been completed successfully.</p>
-        
+        <h1>Thank You for Selecting Your Location!</h1>
+        <p>Your location has been successfully selected. We will proceed with the next steps in organizing your event.</p>
+        <a href="/" class="btn">Go Back to Dashboard</a>
     </div>
 </body>
 </html>

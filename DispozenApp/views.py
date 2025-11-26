@@ -1232,7 +1232,8 @@ class OrganizerLocationFetchFromManyChat(APIView):
             return Response({'error':'Organizer not found'},status=status.HTTP_404_NOT_FOUND)
 
 
-
+def ThankYouPageView(request):
+    return render(request, 'thank.html')
 
 
 
@@ -1329,44 +1330,27 @@ class PaymentSuccessView(APIView):
     def post(self, request):
         try:
             payment_intent_id = request.data.get('payment_intent_id')
-            
+
             if not payment_intent_id:
                 return Response(
-                    {'error': 'payment_intent_id is required'}, 
+                    {'error': 'payment_intent_id is required'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             # Retrieve payment intent from Stripe
             payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-            
+
             # Update payment in database
             payment = PaymentModel.objects.filter(
                 stripe_payment_intent_id=payment_intent_id
             ).first()
-            
+
             if not payment:
                 return Response(
-                    {'error': 'Payment not found'}, 
+                    {'error': 'Payment not found'},
                     status=status.HTTP_404_NOT_FOUND
                 )
-            
-            # Determine payment method
-            if payment_intent.charges.data:
-                charge = payment_intent.charges.data[0]
-                payment_method_details = charge.payment_method_details
-                
-                if payment_method_details.type == 'card':
-                    if payment_method_details.card.wallet:
-                        wallet_type = payment_method_details.card.wallet.type
-                        if wallet_type == 'google_pay':
-                            payment.payment_method = 'google_pay'
-                        elif wallet_type == 'apple_pay':
-                            payment.payment_method = 'apple_pay'
-                        else:
-                            payment.payment_method = 'card'
-                    else:
-                        payment.payment_method = 'card'
-            
+
             # Update payment status
             if payment_intent.status == 'succeeded':
                 payment.payment_status = 'completed'
@@ -1374,36 +1358,37 @@ class PaymentSuccessView(APIView):
                 payment.payment_status = 'pending'
             else:
                 payment.payment_status = 'failed'
-            
+
             payment.save()
-            
+
             from .serializers import PaymentSerializer
             serializer = PaymentSerializer(payment)
-            
+
             return Response({
                 'success': True,
                 'payment': serializer.data,
-                'message': 'Payment confirmed successfully'
+                'message': 'Payment confirmed successfully',
+                'redirect_url': '/payment-success.html'  # Add the redirect URL here
             }, status=status.HTTP_200_OK)
-            
+
         except Exception as e:
             print(f"Error confirming payment: {str(e)}")
             return Response(
-                {'error': str(e)}, 
+                {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-@method_decorator(csrf_exempt, name='dispatch')
+
 class StripeWebhookView(APIView):
     """
     Handle Stripe webhook events for real-time payment updates
     """
-    
+
     def post(self, request):
         payload = request.body
         sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
         webhook_secret = config('STRIPE_WEBHOOK_SECRET')
-        
+
         try:
             event = stripe.Webhook.construct_event(
                 payload, sig_header, webhook_secret
@@ -1412,52 +1397,52 @@ class StripeWebhookView(APIView):
             return HttpResponse(status=400)
         except stripe.error.SignatureVerificationError:
             return HttpResponse(status=400)
-        
+
         # Handle the event
         if event['type'] == 'payment_intent.succeeded':
             payment_intent = event['data']['object']
             self.handle_payment_success(payment_intent)
-            
+
         elif event['type'] == 'payment_intent.payment_failed':
             payment_intent = event['data']['object']
             self.handle_payment_failed(payment_intent)
-        
+
         return HttpResponse(status=200)
-    
+
     def handle_payment_success(self, payment_intent):
         """Update payment status to completed"""
         payment = PaymentModel.objects.filter(
             stripe_payment_intent_id=payment_intent['id']
         ).first()
-        
+
         if payment:
             payment.payment_status = 'completed'
-            
+
             # Determine payment method from charges
             if payment_intent.get('charges', {}).get('data'):
                 charge = payment_intent['charges']['data'][0]
                 payment_method_details = charge.get('payment_method_details', {})
-                
+
                 if payment_method_details.get('type') == 'card':
                     wallet = payment_method_details.get('card', {}).get('wallet', {})
                     wallet_type = wallet.get('type')
-                    
+
                     if wallet_type == 'google_pay':
                         payment.payment_method = 'google_pay'
                     elif wallet_type == 'apple_pay':
                         payment.payment_method = 'apple_pay'
                     else:
                         payment.payment_method = 'card'
-            
+
             payment.save()
             print(f"Payment {payment.id} marked as completed")
-    
+
     def handle_payment_failed(self, payment_intent):
         """Update payment status to failed"""
         payment = PaymentModel.objects.filter(
             stripe_payment_intent_id=payment_intent['id']
         ).first()
-        
+
         if payment:
             payment.payment_status = 'failed'
             payment.save()
@@ -1492,26 +1477,29 @@ def payment_page(request):
 
 def payment_success_page(request):
     return render(request, 'payment-success.html')
+
 class ManyChatPaymentCheck(APIView):
-
-    def get(self,request,fb_id):
+    def get(self, request, fb_id):
         try:
-            user=DispozenUser.objects.get(fb_id=fb_id)
-            payments=PaymentModel.objects.filter(user_id=user,manychat_payment=False).latest('updated_at')
-            print(payments)
-            print(payments.manychat_payment)
-            if payments:
-                if payments.manychat_payment==False:
-                    print(payments.manychat_payment)
-                    payments.manychat_payment=True
-                    payments.save()
-                    return Response({'success':payments.package},status=status.HTTP_200_OK)
-                else:
-                    return Response({'Payment Package':False},status=status.HTTP_200_OK)
-            else:
-                return Response({'success':False},status=status.HTTP_404_NOT_FOUND)
-        except DispozenUser.DoesNotExist:
-            return Response({'error':'User not found'},status=status.HTTP_404_NOT_FOUND)
+            # Get the user based on the fb_id
+            user = DispozenUser.objects.get(fb_id=fb_id)
 
-# def payment_success_page(request):
-#     return render(request, 'payment-success.html')
+            # Attempt to retrieve the latest payment with manychat_payment=False
+            try:
+                payments = PaymentModel.objects.filter(user_id=user, manychat_payment=False).latest('updated_at')
+            except PaymentModel.DoesNotExist:
+                # If no payment record is found, return a response indicating no pending payment
+                return Response({'success': False, 'message': 'No pending ManyChat payment found for the user.'},
+                                status=status.HTTP_404_NOT_FOUND)
+
+            # If a payment record is found, mark it as manychat_payment=True and save
+
+            print("ManyChat payment found:", payments.id)
+            payments.manychat_payment = True
+            payments.save()
+
+            return Response({'success': True, 'package': payments.package}, status=status.HTTP_200_OK)
+
+        except DispozenUser.DoesNotExist:
+            # Handle the case where the user with the given fb_id does not exist
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
