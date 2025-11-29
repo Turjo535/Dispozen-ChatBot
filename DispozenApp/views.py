@@ -126,7 +126,7 @@ class OTPVerificationView(APIView):
             user.otp_created_at=None
             user.save()
             token=get_tokens_for_user(user)
-            return Response({"message": "Email verified successfully.","Tokens":token}, status=status.HTTP_200_OK)
+            return Response({"message": "Email verified successfully."}, status=status.HTTP_200_OK)
         else:
             return Response({"error": "Invalid OTP or you are running out of time."}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -217,8 +217,7 @@ class DispozenUserForgotPasswordResetView(APIView):
             return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
         if new_password != confirm_password:
             return Response({"error": "New password and confirm password do not match."}, status=status.HTTP_400_BAD_REQUEST)
-        if user.otp != otp or datetime.now(pytz.utc) - user.otp_created_at > timedelta(minutes=5):
-            return Response({"error": "Invalid OTP or you are running out of time."}, status=status.HTTP_400_BAD_REQUEST)
+        
         user.set_password(new_password)
         user.save()
         return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
@@ -396,7 +395,6 @@ class EventSchedulesConfirm(APIView):
             return Response({"error": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
         if schedule=='schedule1':
             event.confirm_schedule=event.schedule1_date
-            
             event.going=event.schedule1_going
             event.not_going=event.schedule1_not_going
             event.maybe=event.schedule1_maybe
@@ -602,11 +600,10 @@ class ConfirmEventListView(APIView):
         serializer = ConfirmEventSerializer(events, many=True)
         
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
-        
 
 
-    
+
+
 
 
 class EventDeleteView(APIView):
@@ -725,7 +722,7 @@ class PartnerRequestListView(APIView):
     permission_classes = [IsPartnerUser]
     def get(self, request):
         partner = request.user
-        organizer_requests = OrganizerSendRequestToPartner.objects.filter(partner_id=partner.id, status='pending')
+        organizer_requests = OrganizerSendRequestToPartner.objects.filter(partner_id=partner.id, status='pending',partner_statues=False)
         
         serializer = OrganizerSendRequestToPartnerSerializer(organizer_requests, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -777,6 +774,7 @@ class EventRequestAcceptByPartnerView(APIView):
             event_id=event.id, 
             partner_id=partner.id, 
             organizer_id=organizer.id
+            
         ).order_by('-created_at').first()
         
         if not partnerAcceptRequest:
@@ -787,6 +785,7 @@ class EventRequestAcceptByPartnerView(APIView):
         
         # Update request status
         partnerAcceptRequest.status = status_request
+        partnerAcceptRequest.partner_statues=True
         partnerAcceptRequest.save()
         
         # Create notification for ORGANIZER
