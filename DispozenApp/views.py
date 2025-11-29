@@ -1208,7 +1208,7 @@ class OrganizerLocationFetchFromManyChat(APIView):
     def get(self,request,fb_id):
         try:
             organizer=DispozenUser.objects.get(fb_id=fb_id)
-            selected_place=SelectedPlace.objects.filter(organizer=organizer,manychat_location=False).last()
+            selected_place=SelectedPlace.objects.filter(organizer=organizer,manychat_location=False).latest('selected_at')
             
                 
             if selected_place:
