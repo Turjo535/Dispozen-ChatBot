@@ -27,6 +27,12 @@ class DispozenUserSerializer(serializers.ModelSerializer):
         model = DispozenUser
         fields = ['id', 'name', 'email', 'phone', 'location', 'role', 'created_at', 'fb_id', 'profile_picture']
 
+class DispozenPartnerOrganizerProfileInformationSerializer(serializers.ModelSerializer):
+    profile_picture = serializers.ImageField(required=False, allow_null=True)
+    class Meta:
+        model = DispozenUser
+        fields = ['name', 'phone', 'location', 'role','portfolio_website','service_types' , 'description', 'profile_picture']
+
 class ConfirmEventSerializerPartnerName(serializers.ModelSerializer):
     class Meta:
         model = DispozenUser
@@ -163,7 +169,7 @@ class CreateEventModelSerializer(serializers.ModelSerializer):
 class OrganizerPartnerProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = DispozenUser
-        fields = ['id','name', 'phone', 'location', 'portfolio_website','service_types','description']
+        fields = ['id','name', 'phone', 'location', 'portfolio_website','service_types','description', 'profile_picture']
 
 class DispozenPartnerSerializer(serializers.ModelSerializer):
     successful_events = PartnerSuccessfulEventSerializer(many=True, read_only=True)

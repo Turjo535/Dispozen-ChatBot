@@ -20,13 +20,14 @@ from datetime import datetime
 from datetime import timedelta
 import pytz  
 from decouple import config
-from .serializers import DispozenUserRegistrationSerializer,DispozenUserSerializer, DateTimeModificationSerializer, CreateEventModelSerializer,DispozenAdminCreateSerializer,PartnerListSerializer,PaymentModelSerializer,OrganizerPartnerProfileUpdateSerializer,RequestEventSerializer,UpdateAdminProfileSerializer
+from .serializers import DispozenUserRegistrationSerializer,DispozenUserSerializer, DateTimeModificationSerializer, CreateEventModelSerializer,DispozenAdminCreateSerializer,PartnerListSerializer,PaymentModelSerializer,OrganizerPartnerProfileUpdateSerializer,RequestEventSerializer,UpdateAdminProfileSerializer,DispozenPartnerOrganizerProfileInformationSerializer
 from .serializers import PartnerSuccessfulEventSerializer,OrganizerSendRequestToPartnerSerializer,DispozenPartnerSerializer,DispozenUpdateProfileInformationSerializer,ConfirmEventSerializer,InitialConfirmEventSerializer,AllEventSerializer,OrganizerSelectPartnerSerializer,OrganizerEventShowtoPartnerSerializer,GuestVotingSerializer
 from .serializers import PaymentSerializer, CreatePaymentIntentSerializer
 from .models import DispozenUser, EventModel,PartnerSuccessfulEvent,OrganizerSendRequestToPartner,PaymentModel,Notification,GuestEmail,SelectedPlace
 from .countrytime import convert_utc_to_local
 from datetime import time
 from rest_framework import status, permissions
+from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from .googlemaps import geocode_location
 from channels.layers import get_channel_layer
@@ -373,6 +374,14 @@ class DispozenUsersOverView(APIView):
 
 # Organizer Dashboard Website 
 
+class partnerOrganizerProfileInformationView(APIView):
+    permission_classes = [IsOrganizerUser|IsPartnerUser]
+    def get(self, request):
+        user = request.user
+        print(user.id)
+        serializer = DispozenPartnerOrganizerProfileInformationSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 class AllEventList(APIView):
     permission_classes = [IsOrganizerUser]
 
@@ -635,9 +644,14 @@ class PaymentListView(APIView):
         serializer = PaymentModelSerializer(payments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 class OrganizerPartnerUpdateProfileView(APIView):
-    permission_classes = [IsOrganizerUser|IsPartnerUser]
+    permission_classes = [IsAuthenticated, IsOrganizerUser | IsPartnerUser]
+    # permission_classes = [IsOrganizerUser|IsPartnerUser]
     def put(self, request):
         user = request.user
+        print(user.id, request.auth)
+        if 'id' in request.data and request.data['id'] != user.id:
+            return Response({"error": "You can only update your own profile."}, status=status.HTTP_403_FORBIDDEN)
+        
         serializer = OrganizerPartnerProfileUpdateSerializer(user, data=request.data,partial=True)
         if serializer.is_valid():
             serializer.save()

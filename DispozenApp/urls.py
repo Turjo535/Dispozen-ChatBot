@@ -2,7 +2,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import DispozenUserRegistrationView,OTPVerificationView,SendOTPView,DispozenUserLoginView,DispozenUserChangePasswordView,DispozenUserForgotPasswordResetView,DispozenAdminAccountSettingProfileView,DispozenUserDisableAccountView,DispozenAdminUpdateProfileView
-from .views import SuperAdminCreateAccountView,admininfo,DispozenAdminListView, DispozenOrganizerListView,DispozenPartnerListView,Delete_User,DispozenUsersOverView,RequestEventView
+from .views import SuperAdminCreateAccountView,admininfo,DispozenAdminListView, DispozenOrganizerListView,DispozenPartnerListView,Delete_User,DispozenUsersOverView,RequestEventView,partnerOrganizerProfileInformationView
 from .views import ConfirmEventListView,InitialConfirmViewList,PartnerListView,EventDeleteView,OrganizerPartnerDealListView,OrganizerPartnerDealView,AllEventList,PartnerAcceptRequestListView,PartnerSuccessfulEventView,PaymentListView,  EventSchedulesConfirm,OrganizerPartnerUpdateProfileView,OrganizerConfirmPartner,SendEventEmailsView
 from .views import PartnerDashboardSuccessfullEventView,PartnerRequestListView,PartnerRequestConfirmationView,PartnerConfirmEventListView,EventListShowtoPartnerView,EventRequestAcceptByPartnerView
 from .views import CheckUserView,CreateEventView,DateTimeModificationView,EventInvitationView,GuestVotingView,MapView,SelectPlaceView,OrganizerFinalLocation,OrganizerLocationFetchFromManyChat,ManyChatPaymentCheck
@@ -42,6 +42,7 @@ urlpatterns = [
     # path('organizer-events/<int:id>/', AdminOrganizerEventView.as_view(), name='organizer-events'),
 
     # Organizer management Endpoints
+    path('partner-organizer-profile-info/', partnerOrganizerProfileInformationView.as_view(), name='partner-organizer-profile-info'),
     path('all-events/', AllEventList.as_view(), name='all-events'),
     path('event-schedules-confirm/<int:id>/', EventSchedulesConfirm.as_view(), name='event-schedules-confirm'),
     path('initial-confirmation-events/', InitialConfirmViewList.as_view(), name='all-pending-events'),
