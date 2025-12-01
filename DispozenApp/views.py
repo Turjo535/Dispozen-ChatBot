@@ -333,12 +333,13 @@ class DispozenUsersOverView(APIView):
     permission_classes = [IsSuperAdminUser | IsAdminUser]
 
     def get(self, request):
+        print(request.user, request.user.id,request.user.role)
         organizer_count = DispozenUser.objects.filter(role='organizer').count()
         partner_count = DispozenUser.objects.filter(role='partner').count()
         total_users = organizer_count + partner_count
         today_new_users = DispozenUser.objects.filter(created_at__date=datetime.now().date()).count()
         total_subscribers = PaymentModel.objects.count()
-        total_earned = PaymentModel.objects.filter(status=True).aggregate(total=models.Sum('amount'))['total'] or 0.0
+        total_earned = PaymentModel.objects.filter(payment_status="completed").aggregate(total=models.Sum('amount'))['total'] or 0.0
 
         data = {
             "total_users": total_users,
@@ -425,7 +426,7 @@ class InitialConfirmViewList(APIView):
     def get(self, request):
         organizer = request.user
         events = EventModel.objects.filter(organizer_id=organizer.id, conformation=True,has_accepted=False)
-        
+        print(events)
         serializer = InitialConfirmEventSerializer(events, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)    
     
